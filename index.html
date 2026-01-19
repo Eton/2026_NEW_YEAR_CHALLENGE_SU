@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>過年獎品爭霸賽</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto+Sans+TC', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .score-box {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .active-team-a {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            border: 2px solid #3b82f6;
+            background: rgba(59, 130, 246, 0.2);
+        }
+        .active-team-b {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+            border: 2px solid #ef4444;
+            background: rgba(239, 68, 68, 0.2);
+        }
+        @keyframes bounce-in {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-score {
+            animation: bounce-in 0.5s ease-out forwards;
+        }
+        /* 頭像樣式 - 140px */
+        .avatar-circle {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 5px solid white;
+            overflow: hidden;
+            background: #cbd5e1;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+        .avatar-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        /* 手電筒容器樣式 */
+        .flashlight-wrapper {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            background: #000;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            cursor: none;
+            touch-action: none;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        .flashlight-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            clip-path: circle(0% at var(--cursor-x, 50%) var(--cursor-y, 50%));
+            transition: clip-path 0.05s linear;
+        }
+        .flashlight-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .flashlight-wrapper:hover .flashlight-image {
+            clip-path: circle(60px at var(--cursor-x, 50%) var(--cursor-y, 50%));
+        }
+        /* 特效 */
+        .confetti {
+            position: fixed; width: 10px; height: 10px; top: -20px; animation: fall linear forwards;
+        }
+        @keyframes fall { to { transform: translateY(105vh) rotate(360deg); } }
+        .firecracker {
+            position: absolute; font-size: 4rem; animation: firecracker-shake 0.2s infinite alternate;
+        }
+        @keyframes firecracker-shake { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+        .typing::after { content: '|'; animation: blink 0.8s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* 音效按鈕樣式 */
+        .sound-btn {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .sound-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-50%) scale(1.1);
+        }
+        .sound-btn:active {
+            transform: translateY(-50%) scale(0.9);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4 relative">
+
+    <!-- 全局 MP3 音效播放器 (已移除 loop) -->
+    <audio id="audio-player" src="img/MLG Air Horn Sound.mp3"></audio>
+
+    <!-- 全局音效按鈕 -->
+    <button onclick="toggleAudio()" class="sound-btn" title="播放音效">
+        <span id="sound-icon" class="text-2xl">🎵</span>
+    </button>
+
+    <div id="game-container" class="w-full max-w-4xl glass-card rounded-3xl shadow-2xl p-6 md:p-10 relative z-10">
+        
+        <!-- 開始畫面 -->
+        <div id="start-screen" class="text-center py-4">
+            <div class="mb-2 text-5xl">🎁</div>
+            <h1 class="text-4xl font-extrabold mb-1 bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500">
+                過年獎品爭霸賽
+            </h1>
+            <p class="text-slate-300 mb-6 text-base font-medium">
+                究竟是可愛動物厲害抑或是調皮搗蛋更勝一籌呢
+            </p>
+
+            <div class="relative bg-white/5 p-6 rounded-3xl border border-white/10 min-h-[460px] flex flex-col justify-between mb-8">
+                
+                <!-- A 隊 (左上) -->
+                <div class="flex flex-col items-start">
+                    <h3 class="text-blue-400 font-black text-xl mb-3 uppercase tracking-widest text-left">Team A</h3>
+                    <div class="flex -space-x-10">
+                        <div class="avatar-circle"><img src="img/1.png" alt="女生1"></div>
+                        <div class="avatar-circle"><img src="img/2.png" alt="女生2"></div>
+                        <div class="avatar-circle"><img src="img/3.png" alt="女生3"></div>
+                    </div>
+                    <span class="text-slate-400 text-sm font-bold mt-2">可愛動物隊</span>
+                </div>
+
+                <!-- VS (中間) -->
+                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                    <div class="text-7xl font-black italic text-white/10 select-none tracking-tighter">VS</div>
+                </div>
+
+                <!-- B 隊 (右下) -->
+                <div class="flex flex-col items-end">
+                    <h3 class="text-red-400 font-black text-xl mb-3 uppercase tracking-widest text-right">Team B</h3>
+                    <div class="flex -space-x-10">
+                        <div class="avatar-circle"><img src="img/4.png" alt="男生1"></div>
+                        <div class="avatar-circle"><img src="img/5.png" alt="男生2"></div>
+                    </div>
+                    <span class="text-slate-400 text-sm font-bold mt-2">調皮搗蛋隊</span>
+                </div>
+            </div>
+
+            <button onclick="showGifts()" class="px-16 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 text-white font-bold py-4 rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 text-lg">
+                查 看 禮 物
+            </button>
+        </div>
+
+        <!-- 禮物展示頁面 -->
+        <div id="gift-screen" class="hidden text-center py-6">
+            <h2 class="text-3xl font-bold mb-4 text-yellow-400">🔦 神祕獎品先行探尋 🔦</h2>
+            <p class="text-slate-400 mb-6 italic">移動滑鼠或觸控，看看裡面藏著什麼...</p>
+            
+            <div id="flashlight-container" class="flashlight-wrapper mb-8 mx-auto max-w-2xl" onmousemove="updateFlashlight(event)" ontouchmove="updateFlashlightTouch(event)">
+                <img class="flashlight-image shadow-inner" src="https://images.unsplash.com/photo-1513201099705-a9746e1e201f?q=80&w=1000&auto=format&fit=crop" alt="獎品圖片">
+                <div id="flashlight-hint" class="flashlight-overlay">
+                    <p class="text-white/40 font-bold animate-pulse text-lg">🔦 移動來尋找驚喜</p>
+                </div>
+            </div>
+
+            <div class="bg-indigo-900/30 p-6 rounded-2xl mb-10 border border-indigo-500/20 max-w-md mx-auto">
+                <p class="text-indigo-300 italic text-lg font-bold">「勝利的隊伍可以挑選上面的獎品」</p>
+            </div>
+            
+            <button onclick="startGame()" class="px-16 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-5 rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 text-xl">
+                開 始 競 賽
+            </button>
+        </div>
+
+        <!-- 遊戲主體 -->
+        <div id="quiz-screen" class="hidden">
+            <div class="grid grid-cols-2 gap-6 mb-10">
+                <div id="team-a-box" class="score-box p-6 rounded-2xl bg-blue-900/40 border border-blue-500/30 text-center">
+                    <p class="text-blue-400 font-bold mb-1 uppercase tracking-wider text-xs">Team A</p>
+                    <div class="flex items-center justify-center gap-2">
+                        <span id="score-a" class="text-5xl font-black text-white">0</span>
+                        <span id="plus-a" class="hidden text-green-400 font-bold text-xl animate-bounce">+10</span>
+                    </div>
+                </div>
+                <div id="team-b-box" class="score-box p-6 rounded-2xl bg-red-900/40 border border-red-500/30 text-center">
+                    <p class="text-red-400 font-bold mb-1 uppercase tracking-wider text-xs">Team B</p>
+                    <div class="flex items-center justify-center gap-2">
+                        <span id="score-b" class="text-5xl font-black text-white">0</span>
+                        <span id="plus-b" class="hidden text-green-400 font-bold text-xl animate-bounce">+10</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="media-container" class="hidden mb-6 rounded-2xl overflow-hidden border-4 border-indigo-500/30 shadow-lg bg-black/20">
+                <video id="quiz-video" class="hidden w-full h-auto" controls></video>
+                <img id="prize-image" class="hidden w-full h-64 object-cover" alt="媒體">
+            </div>
+
+            <div class="text-center mb-8">
+                <div class="text-slate-500 text-sm font-medium mb-1" id="question-index-label">QUESTION 1 / 10</div>
+                <div id="question-subtitle" class="text-yellow-500 font-bold text-sm mb-3 hidden"></div>
+                <h2 id="question-text" class="text-2xl md:text-3xl font-bold leading-tight min-h-[80px]"></h2>
+            </div>
+
+            <div id="team-selector-ui" class="hidden flex flex-col items-center gap-4 mb-8">
+                <p class="text-slate-400 font-bold uppercase tracking-widest text-sm">請選擇由哪一隊開始回答：</p>
+                <div class="flex gap-4">
+                    <button onclick="selectTeam('A')" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all transform hover:scale-105">A 隊回答</button>
+                    <button onclick="selectTeam('B')" class="px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all transform hover:scale-105">B 隊回答</button>
+                </div>
+            </div>
+
+            <div id="options-ui" class="hidden">
+                <div id="current-turn-badge" class="text-center mb-6 py-2 rounded-xl font-black text-lg"></div>
+                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"></div>
+            </div>
+
+            <div id="creative-ui" class="hidden flex flex-col items-center gap-4 mb-8">
+                <p class="text-purple-400 font-bold text-lg mb-2 italic">✨ 請根據大家的表現進行計分 ✨</p>
+                <div class="flex flex-wrap justify-center gap-4">
+                    <button onclick="handleCreativeScore('A')" class="px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg">A 隊加分 (+30)</button>
+                    <button onclick="handleCreativeScore('B')" class="px-6 py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all shadow-lg">B 隊加分 (+30)</button>
+                    <button onclick="handleCreativeScore('BOTH')" class="px-6 py-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition-all shadow-lg">雙方皆加分 (+30)</button>
+                    <button onclick="nextQuestion()" class="px-6 py-4 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-xl transition-all shadow-lg">跳過不加分</button>
+                </div>
+            </div>
+
+            <div id="manual-next-ui" class="hidden flex justify-center mb-8">
+                <button onclick="nextQuestion()" class="px-12 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-xl transition-all transform hover:scale-105">
+                    前往下一題 👉
+                </button>
+            </div>
+
+            <div id="feedback" class="h-12 flex items-center justify-center">
+                <p id="feedback-text" class="text-xl font-bold transition-all"></p>
+            </div>
+        </div>
+
+        <!-- 勝利畫面 -->
+        <div id="result-screen" class="hidden text-center py-10 relative">
+            <div class="firecracker left-[-40px] top-0">🧨</div>
+            <div class="firecracker right-[-40px] top-0">🧨</div>
+            <h1 class="text-6xl font-black mb-4 bg-clip-text text-transparent bg-gradient-to-b from-yellow-200 via-yellow-500 to-orange-600 drop-shadow-2xl uppercase">Winner!</h1>
+            <h2 id="winner-text" class="text-4xl font-bold mb-10 text-white tracking-widest">獲得最後勝利的是...</h2>
+            <div id="winner-images-container" class="flex justify-center items-center gap-6 mb-12"></div>
+            <div class="bg-white/5 border border-white/10 rounded-3xl p-8 max-w-md mx-auto mb-10">
+                <div class="flex justify-around items-center">
+                    <div class="text-center"><p class="text-blue-400 font-bold mb-1 text-xs">Team A</p><p id="final-score-a" class="text-4xl font-black">0</p></div>
+                    <div class="h-12 w-[2px] bg-white/20"></div>
+                    <div class="text-center"><p class="text-red-400 font-bold mb-1 text-xs">Team B</p><p id="final-score-b" class="text-4xl font-black">0</p></div>
+                </div>
+            </div>
+            <button onclick="showRevivalScreen()" class="px-12 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-bold py-4 rounded-2xl shadow-xl transition-all transform hover:scale-105 active:scale-95 text-lg uppercase tracking-widest">敗 部 復 活</button>
+            <p class="mt-12 text-slate-400 italic">HAPPY CHINESE NEW YEAR 🧧</p>
+        </div>
+
+        <!-- 敗部復活頁面 -->
+        <div id="revival-screen" class="hidden text-center py-12">
+            <div class="mb-8 text-8xl animate-bounce">📢</div>
+            <h1 class="text-5xl font-black mb-12 text-red-500 bg-white px-6 py-3 inline-block rounded-2xl shadow-2xl">敗部復活賽</h1>
+            <div class="space-y-8 bg-white/10 p-10 rounded-3xl border border-white/20">
+                <p class="text-3xl font-bold text-yellow-400 underline underline-offset-8">任務內容</p>
+                <p class="text-5xl font-black text-white leading-tight">到外面大喊：<br><span class="text-orange-500">「新年快樂，祝大家馬上發財」</span></p>
+            </div>
+            <p class="mt-12 text-slate-400 font-bold tracking-widest text-xl">喊得越大聲，紅包拿越多！🧨</p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 音效控制 ---
+        const audioPlayer = document.getElementById('audio-player');
+        const soundIcon = document.getElementById('sound-icon');
+
+        function toggleAudio() {
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+                soundIcon.innerText = '⏸️';
+            } else {
+                audioPlayer.pause();
+                soundIcon.innerText = '🎵';
+            }
+        }
+
+        // 監聽播放結束事件：自動將按鈕變回 🎵
+        audioPlayer.onended = () => {
+            soundIcon.innerText = '🎵';
+        };
+
+        // --- 遊戲邏輯 ---
+        const questions = [
+            { q: "請問今年是什麼生肖年？", o: ["鼠年", "牛年", "豬年", "馬年"], a: 3, info: "今年是馬年！祝大家馬到成功。" },
+            { q: "請問馬在生肖中排行第幾名？", o: ["7", "5", "12", "3"], a: 0, info: "生肖順序為：鼠、牛、虎、兔、龍、蛇、馬...馬排第七。" },
+            { q: "請問直排輪中的前葫蘆招式，為什麼叫做前葫蘆呢", o: ["需要吃葫蘆糖才能做到的動作", "腳移動的軌跡很像畫一個葫蘆", "是一個韓國女生發明的動作", "溜很快的時候容易葫蘆吞棗"], a: 1, info: "因為雙腳開合滑行的弧線非常像葫蘆的形狀。" },
+            { q: "請問影片中兩位帥哥在練習直排輪的什麼招式？", o: ["剪冰", "檢角", "剪刀石頭布", "撿紅點"], a: 0, info: "這是在練習剪冰動作。", v: "789921317.122908.mp4" },
+            { q: "承上題，請問影片中的男子是誰？", o: ["帥氣的叔叔", "帥氣的爸爸", "帥氣的阿伯", "以上皆是"], a: 3, info: "答對了！集多重身分於一身。" },
+            { q: "皮卡丘的最強招式是什麼？", o: ["十碗伏特", "十萬伏特", "十萬福特", "千萬伏特"], a: 1, info: "震撼全場的十萬伏特！" },
+            { q: "在外太空生存的寶可夢是哪一隻？", o: ["土下座", "博愛座", "烈空坐", "駕駛座"], a: 2, info: "烈空坐居住在臭氧層。" },
+            { q: "一位蘇姓小妹妹在串珠，平均10秒鐘可以串一顆小珠子，請問1分鐘後串了幾顆", o: ["6", "3", "1", "0"], a: 3, info: "答案是 0 顆！因為她這 1 分鐘都在選珠子的顏色呢！" },
+            { q: "呈上題，又過了5分鐘，請問已經串了幾顆小珠子?", o: ["30", "20", "10", "0"], a: 0, info: "5 分鐘共 300 秒，總共 30 顆！" },
+            { q: "這是一個創作題，請畫出這個過年最期待什麼事物", type: "creative", info: "畫出你最期待的事情吧！" }
+        ];
+
+        let currentQuestionIdx = 0, scoreA = 0, scoreB = 0, activeTeam = null, triedTeams = [], canAnswer = false;
+
+        function showGifts() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('gift-screen').classList.remove('hidden');
+        }
+
+        function updateFlashlight(e) {
+            const container = document.getElementById('flashlight-container');
+            const rect = container.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            container.style.setProperty('--cursor-x', x + '%');
+            container.style.setProperty('--cursor-y', y + '%');
+            const hint = document.getElementById('flashlight-hint');
+            if (hint) hint.style.opacity = '0';
+        }
+
+        function updateFlashlightTouch(e) {
+            const touch = e.touches[0];
+            const container = document.getElementById('flashlight-container');
+            const rect = container.getBoundingClientRect();
+            const x = ((touch.clientX - rect.left) / rect.width) * 100;
+            const y = ((touch.clientY - rect.top) / rect.height) * 100;
+            container.style.setProperty('--cursor-x', x + '%');
+            container.style.setProperty('--cursor-y', y + '%');
+            const hint = document.getElementById('flashlight-hint');
+            if (hint) hint.style.opacity = '0';
+        }
+
+        function startGame() {
+            document.getElementById('gift-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            currentQuestionIdx = 0; scoreA = 0; scoreB = 0;
+            initQuestion();
+        }
+
+        async function initQuestion() {
+            triedTeams = []; activeTeam = null; canAnswer = false;
+            const qData = questions[currentQuestionIdx];
+            document.getElementById('question-index-label').innerText = `QUESTION ${currentQuestionIdx + 1} / ${questions.length}`;
+            document.getElementById('feedback-text').innerText = "";
+            document.getElementById('question-text').innerText = "";
+            document.getElementById('team-selector-ui').classList.add('hidden');
+            document.getElementById('options-ui').classList.add('hidden');
+            document.getElementById('creative-ui').classList.add('hidden');
+            document.getElementById('manual-next-ui').classList.add('hidden');
+            
+            const subEl = document.getElementById('question-subtitle');
+            if (qData.sub) { subEl.innerText = qData.sub; subEl.classList.remove('hidden'); } else { subEl.classList.add('hidden'); }
+
+            const mediaContainer = document.getElementById('media-container'), quizVideo = document.getElementById('quiz-video'), prizeImage = document.getElementById('prize-image');
+            mediaContainer.classList.add('hidden'); quizVideo.classList.add('hidden'); prizeImage.classList.add('hidden');
+            quizVideo.pause(); quizVideo.src = ""; prizeImage.src = "";
+
+            await typeText(qData.q, 'question-text');
+
+            if (qData.v) { mediaContainer.classList.remove('hidden'); quizVideo.classList.remove('hidden'); quizVideo.src = qData.v; quizVideo.load(); quizVideo.play().catch(e => {}); }
+            else if (qData.img) { mediaContainer.classList.remove('hidden'); prizeImage.classList.remove('hidden'); prizeImage.src = qData.img; }
+            
+            if (qData.type === 'creative') document.getElementById('creative-ui').classList.remove('hidden');
+            else document.getElementById('team-selector-ui').classList.remove('hidden');
+            document.getElementById('team-a-box').classList.remove('active-team-a');
+            document.getElementById('team-b-box').classList.remove('active-team-b');
+        }
+
+        function typeText(text, elementId) {
+            return new Promise((resolve) => {
+                const element = document.getElementById(elementId);
+                element.innerText = "";
+                element.classList.add('typing');
+                let i = 0;
+                const interval = setInterval(() => {
+                    element.innerText += text.charAt(i++);
+                    if (i >= text.length) { clearInterval(interval); element.classList.remove('typing'); resolve(); }
+                }, 60); 
+            });
+        }
+
+        function selectTeam(team) {
+            if (triedTeams.includes(team)) return;
+            activeTeam = team; canAnswer = true;
+            document.getElementById('team-selector-ui').classList.add('hidden');
+            document.getElementById('options-ui').classList.remove('hidden');
+            const badge = document.getElementById('current-turn-badge'), boxA = document.getElementById('team-a-box'), boxB = document.getElementById('team-b-box');
+            if (team === 'A') {
+                badge.innerText = "👉 目前挑戰：A 隊"; badge.className = "text-center mb-6 py-2 rounded-xl font-black text-lg bg-blue-600 text-white";
+                boxA.classList.add('active-team-a'); boxB.classList.remove('active-team-b');
+            } else {
+                badge.innerText = "👉 目前挑戰：B 隊"; badge.className = "text-center mb-6 py-2 rounded-xl font-black text-lg bg-red-600 text-white";
+                boxB.classList.add('active-team-b'); boxA.classList.remove('active-team-a');
+            }
+            renderOptions();
+        }
+
+        function renderOptions() {
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            const qData = questions[currentQuestionIdx];
+            if (qData.o) {
+                qData.o.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "p-5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 transition-all text-lg font-bold hover:scale-[1.02] active:scale-95 text-left flex items-center";
+                    btn.innerHTML = `<span class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm flex-shrink-0 font-bold">${idx + 1}</span> <span>${opt}</span>`;
+                    btn.onclick = () => handleAnswer(idx);
+                    container.appendChild(btn);
+                });
+            }
+        }
+
+        function handleAnswer(choice) {
+            if (!canAnswer) return;
+            canAnswer = false;
+            const qData = questions[currentQuestionIdx], fbText = document.getElementById('feedback-text'), btns = document.getElementById('options-container').children;
+            
+            if (choice === qData.a) {
+                fbText.innerText = `✅ ${activeTeam} 隊正確！獲得 10 分`; fbText.className = "text-green-400 text-xl font-bold animate-pulse";
+                btns[choice].classList.add('bg-green-600/50', 'border-green-400');
+                if (activeTeam === 'A') { scoreA += 10; animateScore('plus-a', 'score-a', scoreA, 10); }
+                else { scoreB += 10; animateScore('plus-b', 'score-b', scoreB, 10); }
+                setTimeout(nextQuestion, 1800);
+            } else {
+                triedTeams.push(activeTeam);
+                fbText.innerText = `❌ ${activeTeam} 隊答錯！`; fbText.className = "text-red-400 text-xl font-bold";
+                btns[choice].classList.add('bg-red-600/50', 'border-red-400');
+                
+                if (triedTeams.length < 2) {
+                    setTimeout(() => {
+                        const nextTeam = activeTeam === 'A' ? 'B' : 'A';
+                        fbText.innerText = `📢 換 ${nextTeam} 隊補答！`; fbText.className = "text-yellow-400 text-xl font-bold";
+                        setTimeout(() => selectTeam(nextTeam), 800);
+                    }, 800);
+                } else { 
+                    setTimeout(() => { 
+                        fbText.innerText = `❌ 雙方皆答錯！正確答案是：${qData.o[qData.a]}`; 
+                        fbText.className = "text-red-500 text-2xl font-black animate-bounce";
+                        document.getElementById('options-ui').classList.add('hidden');
+                        document.getElementById('manual-next-ui').classList.remove('hidden');
+                    }, 1000); 
+                }
+            }
+        }
+
+        function handleCreativeScore(target) {
+            const points = 30;
+            if (target === 'A') { scoreA += points; animateScore('plus-a', 'score-a', scoreA, points); }
+            else if (target === 'B') { scoreB += points; animateScore('plus-b', 'score-b', scoreB, points); }
+            else if (target === 'BOTH') { scoreA += points; scoreB += points; animateScore('plus-a', 'score-a', scoreA, points); animateScore('plus-b', 'score-b', scoreB, points); }
+            setTimeout(nextQuestion, 1000);
+        }
+
+        function nextQuestion() {
+            currentQuestionIdx++;
+            if (currentQuestionIdx < questions.length) initQuestion();
+            else showFinalResult();
+        }
+
+        function animateScore(plusId, scoreId, newVal, points) {
+            const plus = document.getElementById(plusId), scoreEl = document.getElementById(scoreId);
+            plus.innerText = `+${points}`;
+            plus.classList.remove('hidden'); scoreEl.innerText = newVal; scoreEl.classList.add('animate-score');
+            setTimeout(() => { plus.classList.add('hidden'); scoreEl.classList.remove('animate-score'); }, 1000);
+        }
+
+        function showFinalResult() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            const resScreen = document.getElementById('result-screen');
+            resScreen.classList.remove('hidden');
+            document.getElementById('final-score-a').innerText = scoreA;
+            document.getElementById('final-score-b').innerText = scoreB;
+            const winnerText = document.getElementById('winner-text');
+            const imageContainer = document.getElementById('winner-images-container');
+            imageContainer.innerHTML = '';
+            let winners = [];
+            if (scoreA > scoreB) {
+                winnerText.innerText = "🏆 A 隊（可愛動物隊）獲得最後勝利！";
+                winners = ["https://api.dicebear.com/7.x/avataaars/svg?seed=Girl1", "https://api.dicebear.com/7.x/avataaars/svg?seed=Girl2", "https://api.dicebear.com/7.x/avataaars/svg?seed=Girl3"];
+            } else if (scoreB > scoreA) {
+                winnerText.innerText = "🏆 B 隊（調皮搗蛋隊）獲得最後勝利！";
+                winners = ["https://api.dicebear.com/7.x/avataaars/svg?seed=Boy1", "https://api.dicebear.com/7.x/avataaars/svg?seed=Boy2"];
+            } else {
+                winnerText.innerText = "🤝 雙方平手，恭喜大家新年大快樂！";
+                winners = ["https://api.dicebear.com/7.x/avataaars/svg?seed=Girl1", "https://api.dicebear.com/7.x/avataaars/svg?seed=Boy1"];
+            }
+            winners.forEach((src, idx) => {
+                const div = document.createElement('div');
+                div.className = "avatar-circle winner-avatar";
+                div.style.width = '140px';
+                div.style.height = '140px';
+                div.style.border = '5px solid #fcd34d';
+                div.style.animationDelay = `${idx * 0.2}s`;
+                div.innerHTML = `<img src="${src}" alt="Winner">`;
+                imageContainer.appendChild(div);
+            });
+            startCelebration();
+        }
+
+        function startCelebration() {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#ffffff'];
+            for (let i = 0; i < 150; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                document.body.appendChild(confetti);
+            }
+        }
+
+        function showRevivalScreen() {
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('revival-screen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
