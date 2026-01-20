@@ -52,6 +52,7 @@
             overflow: hidden;
             background: #cbd5e1;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
         }
         .avatar-circle img {
             width: 100%;
@@ -61,19 +62,22 @@
         /* 手電筒容器樣式 */
         .flashlight-wrapper {
             position: relative;
-            width: 100%;
-            height: 350px;
+            width: 420px;
+            max-width: 416px; 
+            max-height: 400px;
+            aspect-ratio: 620 / 595;
             background: #000;
             border-radius: 1.5rem;
             overflow: hidden;
             cursor: none;
             touch-action: none;
             border: 2px solid rgba(255,255,255,0.1);
+            margin: 0 auto;
         }
         .flashlight-image {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
             clip-path: circle(0% at var(--cursor-x, 50%) var(--cursor-y, 50%));
             transition: clip-path 0.05s linear;
         }
@@ -133,7 +137,7 @@
 </head>
 <body class="flex items-center justify-center p-4 relative">
 
-    <!-- 全局 MP3 音效播放器 (已移除 loop) -->
+    <!-- 全局 MP3 音效播放器 -->
     <audio id="audio-player" src="img/MLG Air Horn Sound.mp3"></audio>
 
     <!-- 全局音效按鈕 -->
@@ -153,12 +157,10 @@
                 究竟是可愛動物厲害抑或是調皮搗蛋更勝一籌呢
             </p>
 
-            <div class="relative bg-white/5 p-6 rounded-3xl border border-white/10 min-h-[460px] flex flex-col justify-between mb-8">
-                
-                <!-- A 隊 (左上) -->
+            <div class="relative bg-white/5 p-6 rounded-3xl border border-white/10 min-h-[460px] flex flex-col justify-between mb-8 overflow-hidden">
                 <div class="flex flex-col items-start">
                     <h3 class="text-blue-400 font-black text-xl mb-3 uppercase tracking-widest text-left">Team A</h3>
-                    <div class="flex -space-x-10">
+                    <div class="flex gap-4">
                         <div class="avatar-circle"><img src="img/1.png" alt="女生1"></div>
                         <div class="avatar-circle"><img src="img/2.png" alt="女生2"></div>
                         <div class="avatar-circle"><img src="img/3.png" alt="女生3"></div>
@@ -166,15 +168,13 @@
                     <span class="text-slate-400 text-sm font-bold mt-2">可愛動物隊</span>
                 </div>
 
-                <!-- VS (中間) -->
-                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center">
                     <div class="text-7xl font-black italic text-white/10 select-none tracking-tighter">VS</div>
                 </div>
 
-                <!-- B 隊 (右下) -->
                 <div class="flex flex-col items-end">
                     <h3 class="text-red-400 font-black text-xl mb-3 uppercase tracking-widest text-right">Team B</h3>
-                    <div class="flex -space-x-10">
+                    <div class="flex gap-4">
                         <div class="avatar-circle"><img src="img/4.png" alt="男生1"></div>
                         <div class="avatar-circle"><img src="img/5.png" alt="男生2"></div>
                     </div>
@@ -187,13 +187,13 @@
             </button>
         </div>
 
-        <!-- 禮物展示頁面 -->
+        <!-- 禮物展示頁面 (手電筒特效版) -->
         <div id="gift-screen" class="hidden text-center py-6">
             <h2 class="text-3xl font-bold mb-4 text-yellow-400">🔦 神祕獎品先行探尋 🔦</h2>
-            <p class="text-slate-400 mb-6 italic">移動滑鼠或觸控，看看裡面藏著什麼...</p>
+            <p class="text-slate-400 mb-6 italic text-sm">移動滑鼠或觸控，看看裡面藏著什麼...</p>
             
-            <div id="flashlight-container" class="flashlight-wrapper mb-8 mx-auto max-w-2xl" onmousemove="updateFlashlight(event)" ontouchmove="updateFlashlightTouch(event)">
-                <img class="flashlight-image shadow-inner" src="https://images.unsplash.com/photo-1513201099705-a9746e1e201f?q=80&w=1000&auto=format&fit=crop" alt="獎品圖片">
+            <div id="flashlight-container" class="flashlight-wrapper mb-8" onmousemove="updateFlashlight(event)" ontouchmove="updateFlashlightTouch(event)">
+                <img class="flashlight-image shadow-inner" src="img/7.png" alt="獎品圖片">
                 <div id="flashlight-hint" class="flashlight-overlay">
                     <p class="text-white/40 font-bold animate-pulse text-lg">🔦 移動來尋找驚喜</p>
                 </div>
@@ -227,8 +227,8 @@
                 </div>
             </div>
 
-            <div id="media-container" class="hidden mb-6 rounded-2xl overflow-hidden border-4 border-indigo-500/30 shadow-lg bg-black/20">
-                <video id="quiz-video" class="hidden w-full h-auto" controls></video>
+            <div id="media-container" class="hidden mb-6 rounded-2xl overflow-hidden border-4 border-indigo-500/30 shadow-lg bg-black/20 flex justify-center">
+                <video id="quiz-video" class="hidden max-w-md w-full h-auto mx-auto" controls></video>
                 <img id="prize-image" class="hidden w-full h-64 object-cover" alt="媒體">
             </div>
 
@@ -238,17 +238,19 @@
                 <h2 id="question-text" class="text-2xl md:text-3xl font-bold leading-tight min-h-[80px]"></h2>
             </div>
 
+            <!-- 選項顯示區 -->
+            <div id="options-ui" class="hidden">
+                <div id="current-turn-badge" class="text-center mb-6 py-2 rounded-xl font-black text-lg hidden"></div>
+                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"></div>
+            </div>
+
+            <!-- 隊伍選擇區：在選項出現後才顯示 -->
             <div id="team-selector-ui" class="hidden flex flex-col items-center gap-4 mb-8">
-                <p class="text-slate-400 font-bold uppercase tracking-widest text-sm">請選擇由哪一隊開始回答：</p>
+                <p class="text-yellow-400 font-bold uppercase tracking-widest text-sm animate-pulse">請選擇由哪一隊開始回答：</p>
                 <div class="flex gap-4">
                     <button onclick="selectTeam('A')" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all transform hover:scale-105">A 隊回答</button>
                     <button onclick="selectTeam('B')" class="px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all transform hover:scale-105">B 隊回答</button>
                 </div>
-            </div>
-
-            <div id="options-ui" class="hidden">
-                <div id="current-turn-badge" class="text-center mb-6 py-2 rounded-xl font-black text-lg"></div>
-                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"></div>
             </div>
 
             <div id="creative-ui" class="hidden flex flex-col items-center gap-4 mb-8">
@@ -298,7 +300,6 @@
                 <p class="text-3xl font-bold text-yellow-400 underline underline-offset-8">任務內容</p>
                 <p class="text-5xl font-black text-white leading-tight">到外面大喊：<br><span class="text-orange-500">「新年快樂，祝大家馬上發財」</span></p>
             </div>
-            <p class="mt-12 text-slate-400 font-bold tracking-widest text-xl">喊得越大聲，紅包拿越多！🧨</p>
         </div>
 
     </div>
@@ -307,29 +308,19 @@
         // --- 音效控制 ---
         const audioPlayer = document.getElementById('audio-player');
         const soundIcon = document.getElementById('sound-icon');
-
         function toggleAudio() {
-            if (audioPlayer.paused) {
-                audioPlayer.play();
-                soundIcon.innerText = '⏸️';
-            } else {
-                audioPlayer.pause();
-                soundIcon.innerText = '🎵';
-            }
+            if (audioPlayer.paused) { audioPlayer.play(); soundIcon.innerText = '⏸️'; } 
+            else { audioPlayer.pause(); soundIcon.innerText = '🎵'; }
         }
-
-        // 監聽播放結束事件：自動將按鈕變回 🎵
-        audioPlayer.onended = () => {
-            soundIcon.innerText = '🎵';
-        };
+        audioPlayer.onended = () => { soundIcon.innerText = '🎵'; };
 
         // --- 遊戲邏輯 ---
         const questions = [
             { q: "請問今年是什麼生肖年？", o: ["鼠年", "牛年", "豬年", "馬年"], a: 3, info: "今年是馬年！祝大家馬到成功。" },
             { q: "請問馬在生肖中排行第幾名？", o: ["7", "5", "12", "3"], a: 0, info: "生肖順序為：鼠、牛、虎、兔、龍、蛇、馬...馬排第七。" },
             { q: "請問直排輪中的前葫蘆招式，為什麼叫做前葫蘆呢", o: ["需要吃葫蘆糖才能做到的動作", "腳移動的軌跡很像畫一個葫蘆", "是一個韓國女生發明的動作", "溜很快的時候容易葫蘆吞棗"], a: 1, info: "因為雙腳開合滑行的弧線非常像葫蘆的形狀。" },
-            { q: "請問影片中兩位帥哥在練習直排輪的什麼招式？", o: ["剪冰", "檢角", "剪刀石頭布", "撿紅點"], a: 0, info: "這是在練習剪冰動作。", v: "789921317.122908.mp4" },
-            { q: "承上題，請問影片中的男子是誰？", o: ["帥氣的叔叔", "帥氣的爸爸", "帥氣的阿伯", "以上皆是"], a: 3, info: "答對了！集多重身分於一身。" },
+            { q: "請問影片中兩位帥哥在練習直排輪的什麼招式？", o: ["剪冰", "檢角", "剪刀石頭布", "撿紅點"], a: 0, info: "這是在練習剪冰動作。", v: "img/6.mp4" },
+            { q: "承上題，請問影片中的男子是誰？", o: ["帥氣的叔叔", "帥氣的爸爸", "帥氣 feather", "以上皆是"], a: 3, info: "答對了！集多重身分於一身。" },
             { q: "皮卡丘的最強招式是什麼？", o: ["十碗伏特", "十萬伏特", "十萬福特", "千萬伏特"], a: 1, info: "震撼全場的十萬伏特！" },
             { q: "在外太空生存的寶可夢是哪一隻？", o: ["土下座", "博愛座", "烈空坐", "駕駛座"], a: 2, info: "烈空坐居住在臭氧層。" },
             { q: "一位蘇姓小妹妹在串珠，平均10秒鐘可以串一顆小珠子，請問1分鐘後串了幾顆", o: ["6", "3", "1", "0"], a: 3, info: "答案是 0 顆！因為她這 1 分鐘都在選珠子的顏色呢！" },
@@ -384,21 +375,29 @@
             document.getElementById('options-ui').classList.add('hidden');
             document.getElementById('creative-ui').classList.add('hidden');
             document.getElementById('manual-next-ui').classList.add('hidden');
+            document.getElementById('current-turn-badge').classList.add('hidden');
             
             const subEl = document.getElementById('question-subtitle');
             if (qData.sub) { subEl.innerText = qData.sub; subEl.classList.remove('hidden'); } else { subEl.classList.add('hidden'); }
 
             const mediaContainer = document.getElementById('media-container'), quizVideo = document.getElementById('quiz-video'), prizeImage = document.getElementById('prize-image');
             mediaContainer.classList.add('hidden'); quizVideo.classList.add('hidden'); prizeImage.classList.add('hidden');
-            quizVideo.pause(); quizVideo.src = ""; prizeImage.src = "";
+            quizVideo.pause(); quizVideo.src = "img/6.mp4"; prizeImage.src = "img/6.mp4";
 
             await typeText(qData.q, 'question-text');
 
-            if (qData.v) { mediaContainer.classList.remove('hidden'); quizVideo.classList.remove('hidden'); quizVideo.src = qData.v; quizVideo.load(); quizVideo.play().catch(e => {}); }
+            if (qData.v) { mediaContainer.classList.remove('hidden'); quizVideo.classList.remove('hidden'); quizVideo.src = qData.v; quizVideo.load(); }
             else if (qData.img) { mediaContainer.classList.remove('hidden'); prizeImage.classList.remove('hidden'); prizeImage.src = qData.img; }
             
-            if (qData.type === 'creative') document.getElementById('creative-ui').classList.remove('hidden');
-            else document.getElementById('team-selector-ui').classList.remove('hidden');
+            if (qData.type === 'creative') {
+                document.getElementById('creative-ui').classList.remove('hidden');
+            } else {
+                // 先顯示選項（但不能點擊）
+                renderOptions(false);
+                document.getElementById('options-ui').classList.remove('hidden');
+                // 同時顯示隊伍選擇器
+                document.getElementById('team-selector-ui').classList.remove('hidden');
+            }
             document.getElementById('team-a-box').classList.remove('active-team-a');
             document.getElementById('team-b-box').classList.remove('active-team-b');
         }
@@ -412,36 +411,50 @@
                 const interval = setInterval(() => {
                     element.innerText += text.charAt(i++);
                     if (i >= text.length) { clearInterval(interval); element.classList.remove('typing'); resolve(); }
-                }, 60); 
+                }, 150); 
             });
         }
 
         function selectTeam(team) {
             if (triedTeams.includes(team)) return;
-            activeTeam = team; canAnswer = true;
+            activeTeam = team;
+            canAnswer = true;
+            
+            // 隱藏隊伍選擇器，顯示答題狀態
             document.getElementById('team-selector-ui').classList.add('hidden');
-            document.getElementById('options-ui').classList.remove('hidden');
-            const badge = document.getElementById('current-turn-badge'), boxA = document.getElementById('team-a-box'), boxB = document.getElementById('team-b-box');
+            const badge = document.getElementById('current-turn-badge');
+            badge.classList.remove('hidden');
+            
+            const boxA = document.getElementById('team-a-box'), boxB = document.getElementById('team-b-box');
             if (team === 'A') {
-                badge.innerText = "👉 目前挑戰：A 隊"; badge.className = "text-center mb-6 py-2 rounded-xl font-black text-lg bg-blue-600 text-white";
+                badge.innerText = "👉 目前挑戰：A 隊"; badge.className = "text-center mb-6 py-2 rounded-xl font-black text-lg bg-blue-600 text-white block";
                 boxA.classList.add('active-team-a'); boxB.classList.remove('active-team-b');
             } else {
-                badge.innerText = "👉 目前挑戰：B 隊"; badge.className = "text-center mb-6 py-2 rounded-xl font-black text-lg bg-red-600 text-white";
+                badge.innerText = "👉 目前挑戰：B 隊"; badge.className = "text-center mb-6 py-2 rounded-xl font-black text-lg bg-red-600 text-white block";
                 boxB.classList.add('active-team-b'); boxA.classList.remove('active-team-a');
             }
-            renderOptions();
+            
+            // 重新渲染選項為可點擊狀態
+            renderOptions(true);
         }
 
-        function renderOptions() {
+        function renderOptions(clickable) {
             const container = document.getElementById('options-container');
             container.innerHTML = '';
             const qData = questions[currentQuestionIdx];
             if (qData.o) {
                 qData.o.forEach((opt, idx) => {
                     const btn = document.createElement('button');
-                    btn.className = "p-5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 transition-all text-lg font-bold hover:scale-[1.02] active:scale-95 text-left flex items-center";
+                    // 如果不可點擊，改變透明度與外觀
+                    const opacityClass = clickable ? "opacity-100" : "opacity-50 cursor-not-allowed";
+                    btn.className = `p-5 rounded-2xl bg-white/10 border border-white/10 transition-all text-lg font-bold text-left flex items-center ${opacityClass}`;
+                    if (clickable) btn.classList.add('hover:bg-white/20', 'hover:scale-[1.02]', 'active:scale-95');
+                    
                     btn.innerHTML = `<span class="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm flex-shrink-0 font-bold">${idx + 1}</span> <span>${opt}</span>`;
-                    btn.onclick = () => handleAnswer(idx);
+                    
+                    if (clickable) {
+                        btn.onclick = () => handleAnswer(idx);
+                    }
                     container.appendChild(btn);
                 });
             }
@@ -461,7 +474,7 @@
             } else {
                 triedTeams.push(activeTeam);
                 fbText.innerText = `❌ ${activeTeam} 隊答錯！`; fbText.className = "text-red-400 text-xl font-bold";
-                btns[choice].classList.add('bg-red-600/50', 'border-red-400');
+                btns[choice].classList.add('bg-red-600/50', 'border-red-400', 'opacity-50');
                 
                 if (triedTeams.length < 2) {
                     setTimeout(() => {
@@ -473,7 +486,6 @@
                     setTimeout(() => { 
                         fbText.innerText = `❌ 雙方皆答錯！正確答案是：${qData.o[qData.a]}`; 
                         fbText.className = "text-red-500 text-2xl font-black animate-bounce";
-                        document.getElementById('options-ui').classList.add('hidden');
                         document.getElementById('manual-next-ui').classList.remove('hidden');
                     }, 1000); 
                 }
@@ -507,8 +519,7 @@
             resScreen.classList.remove('hidden');
             document.getElementById('final-score-a').innerText = scoreA;
             document.getElementById('final-score-b').innerText = scoreB;
-            const winnerText = document.getElementById('winner-text');
-            const imageContainer = document.getElementById('winner-images-container');
+            const winnerText = document.getElementById('winner-text'), imageContainer = document.getElementById('winner-images-container');
             imageContainer.innerHTML = '';
             let winners = [];
             if (scoreA > scoreB) {
@@ -524,9 +535,7 @@
             winners.forEach((src, idx) => {
                 const div = document.createElement('div');
                 div.className = "avatar-circle winner-avatar";
-                div.style.width = '140px';
-                div.style.height = '140px';
-                div.style.border = '5px solid #fcd34d';
+                div.style.width = '180px'; div.style.height = '180px'; div.style.border = '5px solid #fcd34d';
                 div.style.animationDelay = `${idx * 0.2}s`;
                 div.innerHTML = `<img src="${src}" alt="Winner">`;
                 imageContainer.appendChild(div);
@@ -546,7 +555,6 @@
                 document.body.appendChild(confetti);
             }
         }
-
         function showRevivalScreen() {
             document.getElementById('result-screen').classList.add('hidden');
             document.getElementById('revival-screen').classList.remove('hidden');
